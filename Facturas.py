@@ -104,13 +104,15 @@ def substituir_placeholders(document_id, substitutions):
     result = doc.batchUpdate(documentId=document_id, body={'requests': requests}).execute()
     return result
 
+# Obter as credenciais do Streamlit secrets
+SERVICE_ACCOUNT_FILE = st.secrets["gcp_service_account"]
 
 # ------- BEGIN Google Definitions -------
 # for Google SHEETS
 SERVICE_ACCOUNT_FILE = 'keys.json'
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/documents",
           "https://www.googleapis.com/auth/drive"]
-creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
 service = build("sheets", "v4", credentials=creds)
 # Call the Sheets API
