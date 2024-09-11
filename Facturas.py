@@ -118,20 +118,20 @@ service = build("sheets", "v4", credentials=creds)
 # Call the Sheets API
 sheet = service.spreadsheets()
 
-# for Google DOCS
-SERVICE_ACCOUNT_FILE_DOCS = 'keysGoogleDocs.json'
-SCOPES_DOCS = ["https://www.googleapis.com/auth/documents"]
-creds_docs = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DOCS)
-INVOICE_TEMPLATE_ID = "1bQV0B2OwXPkpSReFS-F1MZied9mxlQgecV-MJsMrLZ8"  # The ID of the Factura Template in Google Docs
-service_docs = build("docs", "v1", credentials=creds)
-# Call the Sheets API
-doc = service_docs.documents()
+# # for Google DOCS
+# SERVICE_ACCOUNT_FILE_DOCS = 'keysGoogleDocs.json'
+# SCOPES_DOCS = ["https://www.googleapis.com/auth/documents"]
+# creds_docs = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DOCS)
+# INVOICE_TEMPLATE_ID = "1bQV0B2OwXPkpSReFS-F1MZied9mxlQgecV-MJsMrLZ8"  # The ID of the Factura Template in Google Docs
+# service_docs = build("docs", "v1", credentials=creds)
+# # Call the Sheets API
+# doc = service_docs.documents()
 
-# for Google DRIVE
-SERVICE_ACCOUNT_FILE_DRIVE = ' '
-SCOPES_DRIVE = ["https://www.googleapis.com/auth/drive"]
-creds_drive = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DRIVE)
-service_drive = build("drive", "v3", credentials=creds)
+# # for Google DRIVE
+# SERVICE_ACCOUNT_FILE_DRIVE = ' '
+# SCOPES_DRIVE = ["https://www.googleapis.com/auth/drive"]
+# creds_drive = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DRIVE)
+# service_drive = build("drive", "v3", credentials=creds)
 
 # for Google Drive to save the PDF invoice
 PDF_FOLDER_ID = '1y2VtRYER7PwZL_pmQ_1SZfz9ysa3XqjG'
