@@ -67,9 +67,10 @@ def reactivate_client(*args):
 
 
 # ------- BEGIN Google Definitions -------
-SERVICE_ACCOUNT_FILE = 'keys.json'
+# SERVICE_ACCOUNT_FILE = 'keys.json'
+SERVICE_ACCOUNT_FILE = st.secrets["gcp_service_account"]
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 
 # The ID of the spreadsheet
 SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"
