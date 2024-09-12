@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import locale
 import base64
 import io
+import json
 
 
 # Function to GET values from spreadsheet
@@ -104,37 +105,61 @@ def substituir_placeholders(document_id, substitutions):
     result = doc.batchUpdate(documentId=document_id, body={'requests': requests}).execute()
     return result
 
-# Obter as credenciais do Streamlit secrets
-SERVICE_ACCOUNT_FILE = st.secrets["gcp_service_account"]
+
+# Read credentials from secrets.toml file
+gcp_type = st.secrets.gcp_service_account["type"]
+gcp_project_id = st.secrets.gcp_service_account["project_id"]
+gcp_private_key_id = st.secrets.gcp_service_account["private_key_id"]
+gcp_private_key = st.secrets.gcp_service_account["private_key"].replace('\n', '\\n')
+gcp_client_email = st.secrets.gcp_service_account["client_email"]
+gcp_client_id = st.secrets.gcp_service_account["client_id"]
+gcp_auth_uri = st.secrets.gcp_service_account["auth_uri"]
+gcp_token_uri = st.secrets.gcp_service_account["token_uri"]
+gcp_auth_provider_x509_cert_url = st.secrets.gcp_service_account["auth_provider_x509_cert_url"]
+gcp_client_x509_cert_url = st.secrets.gcp_service_account["client_x509_cert_url"]
+gcp_universe_domain = st.secrets.gcp_service_account["universe_domain"]
+
+account_info_str = f'''
+{{
+  "type": "{gcp_type}",
+  "project_id": "{gcp_project_id}",
+  "private_key_id": "{gcp_private_key_id}",
+  "private_key": "{gcp_private_key}",
+  "client_email": "{gcp_client_email}",
+  "client_id": "{gcp_client_id}",
+  "auth_uri": "{gcp_auth_uri}",
+  "token_uri": "{gcp_token_uri}",
+  "auth_provider_x509_cert_url": "{gcp_auth_provider_x509_cert_url}",
+  "client_x509_cert_url": "{gcp_client_x509_cert_url}",
+  "universe_domain": "{gcp_universe_domain}"
+}}
+'''
+
+# Converte a string JSON para um dicionário Python
+account_info = json.loads(account_info_str)
+
+SCOPES = st.secrets.google_definition["SCOPES"]
+SPREADSHEET_ID = st.secrets.google_definition["SPREADSHEET_ID"]
+INVOICE_TEMPLATE_ID = st.secrets.google_definition["INVOICE_TEMPLATE_ID"]
+PDF_FOLDER_ID = st.secrets.google_definition["PDF_FOLDER_ID"]
 
 # ------- BEGIN Google Definitions -------
 # for Google SHEETS
-# SERVICE_ACCOUNT_FILE = 'keys.json'
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/documents",
-          "https://www.googleapis.com/auth/drive"]
-creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
+creds = service_account.Credentials.from_service_account_info(account_info, scopes=SCOPES)
+# SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
 service = build("sheets", "v4", credentials=creds)
 # Call the Sheets API
 sheet = service.spreadsheets()
 
-# # for Google DOCS
-# SERVICE_ACCOUNT_FILE_DOCS = 'keysGoogleDocs.json'
-# SCOPES_DOCS = ["https://www.googleapis.com/auth/documents"]
+# for Google DOCS
 # creds_docs = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DOCS)
-# INVOICE_TEMPLATE_ID = "1bQV0B2OwXPkpSReFS-F1MZied9mxlQgecV-MJsMrLZ8"  # The ID of the Factura Template in Google Docs
 service_docs = build("docs", "v1", credentials=creds)
 # Call the Sheets API
 doc = service_docs.documents()
 
-# # for Google DRIVE
-# SERVICE_ACCOUNT_FILE_DRIVE = ' '
-# SCOPES_DRIVE = ["https://www.googleapis.com/auth/drive"]
+# for Google DRIVE
 # creds_drive = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DRIVE)
 service_drive = build("drive", "v3", credentials=creds)
-
-# for Google Drive to save the PDF invoice
-PDF_FOLDER_ID = '1y2VtRYER7PwZL_pmQ_1SZfz9ysa3XqjG'
 # ------ END Google Definitions -------
 
 # --- Starting Streamlit
@@ -289,7 +314,7 @@ if tab == TAB_1:  # Change Invoice
                 invoice_fecha_pago = registro[5]
                 invoice_descripcion = registro[6]
                 invoice_status = registro[16]
-                index_invoice_sequence.append(index_invoice+1)
+                index_invoice_sequence.append(index_invoice + 1)
         # print('index_invoice_sequence =', index_invoice_sequence)
 
         with col2:
