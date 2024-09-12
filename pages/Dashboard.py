@@ -5,6 +5,7 @@ from google.oauth2 import service_account
 import pandas as pd
 import locale
 from datetime import datetime
+import json
 
 
 # Function to get values from spreadsheet
@@ -17,15 +18,46 @@ def leitura_worksheet(worksheet):
     return df
 
 
+# Read credentials from secrets.toml file
+gcp_type = st.secrets.gcp_service_account["type"]
+gcp_project_id = st.secrets.gcp_service_account["project_id"]
+gcp_private_key_id = st.secrets.gcp_service_account["private_key_id"]
+gcp_private_key = st.secrets.gcp_service_account["private_key"].replace('\n', '\\n')
+gcp_client_email = st.secrets.gcp_service_account["client_email"]
+gcp_client_id = st.secrets.gcp_service_account["client_id"]
+gcp_auth_uri = st.secrets.gcp_service_account["auth_uri"]
+gcp_token_uri = st.secrets.gcp_service_account["token_uri"]
+gcp_auth_provider_x509_cert_url = st.secrets.gcp_service_account["auth_provider_x509_cert_url"]
+gcp_client_x509_cert_url = st.secrets.gcp_service_account["client_x509_cert_url"]
+gcp_universe_domain = st.secrets.gcp_service_account["universe_domain"]
+
+account_info_str = f'''
+{{
+  "type": "{gcp_type}",
+  "project_id": "{gcp_project_id}",
+  "private_key_id": "{gcp_private_key_id}",
+  "private_key": "{gcp_private_key}",
+  "client_email": "{gcp_client_email}",
+  "client_id": "{gcp_client_id}",
+  "auth_uri": "{gcp_auth_uri}",
+  "token_uri": "{gcp_token_uri}",
+  "auth_provider_x509_cert_url": "{gcp_auth_provider_x509_cert_url}",
+  "client_x509_cert_url": "{gcp_client_x509_cert_url}",
+  "universe_domain": "{gcp_universe_domain}"
+}}
+'''
+
+# Converte a string JSON para um dicionário Python
+account_info = json.loads(account_info_str)
+
+SCOPES = st.secrets.google_definition["SCOPES"]
+SPREADSHEET_ID = st.secrets.google_definition["SPREADSHEET_ID"]
+INVOICE_TEMPLATE_ID = st.secrets.google_definition["INVOICE_TEMPLATE_ID"]
+PDF_FOLDER_ID = st.secrets.google_definition["PDF_FOLDER_ID"]
+
 # ------- BEGIN Google Definitions -------
 # for Google SHEETS
-# SERVICE_ACCOUNT_FILE = 'keys.json'
-SERVICE_ACCOUNT_FILE = st.secrets["gcp_service_account"]
-
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/documents",
-          "https://www.googleapis.com/auth/drive"]
-creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
+creds = service_account.Credentials.from_service_account_info(account_info, scopes=SCOPES)
 service = build("sheets", "v4", credentials=creds)
 # Call the Sheets API
 sheet = service.spreadsheets()
