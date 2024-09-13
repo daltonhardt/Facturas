@@ -17,7 +17,7 @@ import io
 import json
 
 
-# Function to GET values from spreadsheet
+# Function to READ/GET values from spreadsheet
 def leitura_worksheet(worksheet):
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=worksheet).execute()
     values = result.get("values", [])
@@ -27,20 +27,21 @@ def leitura_worksheet(worksheet):
     return df
 
 
-# Function to get values from spreadsheet
+# Function to READ/GET client values from spreadsheet
 def leitura_registro_cliente(client_id):
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range='clientes').execute()
     values = result.get("values", [])
-    return values[client_id]  # retorna os valores do registro em uma lista
+    return values[client_id]  # return the record values in a list
 
 
-# Function to get values from spreadsheet
+# Function to READ/GET invoice values from spreadsheet
 def leitura_registro_factura(invoice_id):
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range='facturas').execute()
     values = result.get("values", [])
-    return values[invoice_id]  # retorna os valores do registro em uma lista
+    return values[invoice_id]  # return the record values in a list
 
 
+# Function to FORMAT CURRENCY to European standard (Spain)
 def format_currency(amount, currency_symbol="€", locale_name="es_ES.UTF-8", decimal_places=2):
     # Set the locale for formatting
     locale.setlocale(locale.LC_ALL, locale_name)
@@ -51,6 +52,7 @@ def format_currency(amount, currency_symbol="€", locale_name="es_ES.UTF-8", de
     return f'{currency_symbol} {formatted_amount}'
 
 
+# Function to UPDATE STATUS of all the invoices checking DUE DATE x TODAY DATE
 def update_status_facturas(df):
     for index_factura in range(len(df)):
         # print(index_factura+2, "df_facturas.iloc[index_factura]['plazo_pago']", df_facturas.iloc[index_factura]['plazo_pago'])
@@ -68,8 +70,7 @@ def update_status_facturas(df):
             # print(f".....Registro: {index_factura+2} - {nro_factura} na celula {celula} com Status atualizado para 'Atrasado'")
 
 
-# Função para alterar o status da fatura
-# function to DELETE a client with a Dialog popup window
+# Function to change the STATUS of the invoice
 @st.experimental_dialog("A T E N C I Ó N")
 def change_invoice_status(index_sequence, status, fecha):
     st.write(f"¿Confirma?")
@@ -87,10 +88,10 @@ def change_invoice_status(index_sequence, status, fecha):
         st.rerun()
 
 
-# Função para substituir placeholders no documento
+# Function to replace the placeholders in the invoice_template in Google Docs
 def substituir_placeholders(document_id, substitutions):
     requests = []
-    # Itera sobre cada substituição e cria uma solicitação de atualização para o Google Docs
+    # Iterate over all "substitutions" items and create an update request for Google Docs
     for placeholder, value_text in substitutions.items():
         requests.append({
             'replaceAllText': {
@@ -106,7 +107,7 @@ def substituir_placeholders(document_id, substitutions):
     return result
 
 
-# Read credentials from secrets.toml file
+# Read all GCP Credentials stored in secrets.toml file
 gcp_type = st.secrets.gcp_service_account["type"]
 gcp_project_id = st.secrets.gcp_service_account["project_id"]
 gcp_private_key_id = st.secrets.gcp_service_account["private_key_id"]
@@ -118,7 +119,7 @@ gcp_token_uri = st.secrets.gcp_service_account["token_uri"]
 gcp_auth_provider_x509_cert_url = st.secrets.gcp_service_account["auth_provider_x509_cert_url"]
 gcp_client_x509_cert_url = st.secrets.gcp_service_account["client_x509_cert_url"]
 gcp_universe_domain = st.secrets.gcp_service_account["universe_domain"]
-
+# Create a dictionary string
 account_info_str = f'''
 {{
   "type": "{gcp_type}",
@@ -134,29 +135,25 @@ account_info_str = f'''
   "universe_domain": "{gcp_universe_domain}"
 }}
 '''
-
-# Converte a string JSON para um dicionário Python
+# Convert to a JSON string
 account_info = json.loads(account_info_str)
 
+# ------- BEGIN Google Definitions -------
 SCOPES = st.secrets.google_definition["SCOPES"]
 SPREADSHEET_ID = st.secrets.google_definition["SPREADSHEET_ID"]
 INVOICE_TEMPLATE_ID = st.secrets.google_definition["INVOICE_TEMPLATE_ID"]
 PDF_FOLDER_ID = st.secrets.google_definition["PDF_FOLDER_ID"]
-
-# ------- BEGIN Google Definitions -------
 # for Google SHEETS
 creds = service_account.Credentials.from_service_account_info(account_info, scopes=SCOPES)
 # SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
 service = build("sheets", "v4", credentials=creds)
 # Call the Sheets API
 sheet = service.spreadsheets()
-
 # for Google DOCS
 # creds_docs = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DOCS)
 service_docs = build("docs", "v1", credentials=creds)
 # Call the Sheets API
 doc = service_docs.documents()
-
 # for Google DRIVE
 # creds_drive = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE_DOCS, scopes=SCOPES_DRIVE)
 service_drive = build("drive", "v3", credentials=creds)
@@ -173,11 +170,10 @@ locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
 # get today date
 TODAY = datetime.strptime(datetime.now().strftime("%d/%m/%Y"), "%d/%m/%Y")
 
-# pd.options.display.float_format = "{:,.2f}".format
 pd.set_option('display.precision', 2)
-# Aplicar o formato de duas casas decimais apenas na exibição
+# Apply format with two decimal numbers for display only
 pd.options.display.float_format = '{:.2f}'.format
-# Pandas visualization
+# Pandas visualization parameters
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
@@ -192,17 +188,18 @@ df_clientes_activos.index += 1  # making index start from 1 to stay equal with "
 
 # Create DataFrame with ALL invoice values from spreadsheet
 df_facturas_original = leitura_worksheet('facturas')
-# Update invoice status ('Atrasado') based on the current date today()
-update_status_facturas(df_facturas_original)
-# Read DataFrame again with ALL invoice values from spreadsheet
-# del df_facturas  # delete entire dataframe first
-df_facturas = leitura_worksheet('facturas')  # read dataframe again from scratch
 
-# df_facturas = pd.merge(df_facturas, df_clientes['cod_cliente'], on='cod_cliente')
+# Call function to update invoice status ('Atrasado') based on the current date today()
+update_status_facturas(df_facturas_original)
+
+# Read DataFrame again with ALL invoice values from spreadsheet after updating the status
+df_facturas = leitura_worksheet('facturas')
+
+# Add client name (nombre_cliente) column mapping by client unique code (cod_cliente)
 df_facturas['nombre_cliente'] = df_facturas.cod_cliente.map(
     df_clientes.set_index('cod_cliente')['nombre_cliente'].to_dict())
 
-# Adjusting the float numbers
+# Adjusting the float numbers to match european standard
 df_facturas['cantidad'] = df_facturas['cantidad'].apply(
     lambda x: float(str(x).replace('.', '').replace(',', '.')))
 df_facturas['precio_unit'] = df_facturas['precio_unit'].apply(
@@ -216,11 +213,12 @@ df_facturas['valor_retencion'] = df_facturas['valor_retencion'].apply(
 df_facturas['total'] = df_facturas['total'].apply(
     lambda x: float(str(x).replace('.', '').replace(',', '.')))
 
+# Group all records with the same invoice number and get the sum
 df_total_facturas = df_facturas.groupby(['nro_factura'], as_index=False).agg(
     {'total': 'sum', 'nombre_cliente': 'first', 'descripcion': 'first', 'fecha_emision': 'first', 'plazo_pago': 'first',
      'status': 'first'})
 df_total_facturas['total'] = df_total_facturas['total'].apply(lambda x: f'{x:.2f}')
-df_total_facturas.index += 1
+df_total_facturas.index += 1  # make index start at 1
 # st.dataframe(df_total_facturas)
 
 # Tabs
@@ -239,6 +237,7 @@ tab = option_menu(
 
 if tab == TAB_0:  # Show ALL invoices
     st.divider()
+    # Show all invoices with due date = Today
     st.subheader('Factura con fecha de vencimiento hoy   🎉 ')
     # print('Hoje: ', datetime.now().strftime("%-d/%m/%Y"))  # format "%-d" para mostrar o dia sem o zero na frente
     df_facturas_hoy = df_total_facturas[
@@ -249,9 +248,9 @@ if tab == TAB_0:  # Show ALL invoices
         # st.dataframe(df_facturas_atrasadas.iloc[::-1])  # show dataframe in reverse order (from newest to oldest)
     else:
         st.success(f"¡No hay facturas para recibir pago hoy!", icon='⏳')
-        # st.title('No hay factura retrasada!')
 
     st.divider()
+    # Show all invoices unpaid
     st.subheader('Facturas atrasadas   😳 ')
     df_facturas_atrasadas = df_total_facturas[df_total_facturas['status'] == 'Atrasado'].reset_index(drop=True)
     df_facturas_atrasadas.index += 1  # making index start from 1 to stay equal with "df_clientes"
@@ -260,9 +259,9 @@ if tab == TAB_0:  # Show ALL invoices
         # st.dataframe(df_facturas_atrasadas.iloc[::-1])  # show dataframe in reverse order (from newest to oldest)
     else:
         st.success(f"¡No hay facturas retrasadas!", icon='✅')
-        # st.title('No hay factura retrasada!')
 
     st.divider()
+    # Show all invoices to be paid
     st.subheader('Facturas por recibir  ⌛')
     df_facturas_recibir = df_total_facturas[df_total_facturas['status'] == 'Recibir'].reset_index(drop=True)
     df_facturas_recibir.index += 1  # making index start from 1 to stay equal with "df_clientes"
@@ -270,12 +269,14 @@ if tab == TAB_0:  # Show ALL invoices
     # st.dataframe(df_facturas_recibir.iloc[::-1])  # show dataframe in reverse order (from newest to oldest)
 
     st.divider()
+    # Show ALL invoices
     st.subheader('Todas Facturas')
     st.dataframe(df_total_facturas)
     # st.dataframe(df_total_facturas.iloc[::-1])  # show dataframe in reverse order (from newest to oldest)
 
 if tab == TAB_1:  # Change Invoice
     st.divider()
+    # Option to change the status to PAID for the invoices Unpaid and to Receive
     st.subheader('Cambiar status de pago de Facturas atrasadas y a recibir')
     df_facturas_nopagas = df_total_facturas[df_total_facturas['status'].isin(['Atrasado', 'Recibir'])].reset_index(
         drop=True)
@@ -284,6 +285,7 @@ if tab == TAB_1:  # Change Invoice
     # select Client name from dataframe
 
     st.divider()
+    # Let the user select unpaid invoice and change the status
     col1, col2, col3 = st.columns([0.3, 0.4, 0.3])
     with col1:
         invoice = st.selectbox('Factura Nro.', df_facturas_nopagas['nro_factura'].sort_values(),
@@ -295,8 +297,8 @@ if tab == TAB_1:  # Change Invoice
                 invoice_total = df_total_facturas.iloc[index_total]['total']
                 # print('...invoice_total', index_total, ' = ', invoice_total)
                 break
-
-        index_invoice_sequence = []  # inicializando a lista com os indices das linhas da mesma fatura
+        #
+        index_invoice_sequence = []  # initialize a list to recieve the line indexes corresponding to the same invoice
         for index_invoice in range(len(df_facturas)):
             # print('index da factura:', index_invoice)
             if df_facturas.iloc[index_invoice]['nro_factura'] == invoice:
@@ -317,11 +319,14 @@ if tab == TAB_1:  # Change Invoice
                 index_invoice_sequence.append(index_invoice + 1)
         # print('index_invoice_sequence =', index_invoice_sequence)
 
+        # Display some info from the selected invoice
         with col2:
             st.write()
             st.write(f'Fecha emisión factura: {invoice_fecha_emision}')
             st.write(f'Total factura: {invoice_total}')
             st.write(f'Status actual de la factura: {invoice_status}')
+
+        # Display a button to change the status of the invoice
         with col3:
             new_invoice_status = st.selectbox('Nuevo Status', ['Pagado', 'Cancelado'], index=None,
                                               placeholder='Seleccione...')
@@ -335,13 +340,13 @@ if tab == TAB_1:  # Change Invoice
 if tab == TAB_2:  # Create NEW Invoice
     with st.container():
         # print('df_facturas:\n', df_facturas)
-        last_invoice_row = len(df_facturas)  # gt the last written row from the dataframe
+        last_invoice_row = len(df_facturas)  # get the last written row from the dataframe
         last_invoice = df_facturas.loc[last_invoice_row, 'nro_factura']  # get invoice number from column 'nro_factura'
         # print('last_invoice_row = ', last_invoice_row, 'with number = ', last_invoice)
         invoice_num = int(last_invoice[-3:]) + 1  # add 1 to create the new invoice sequential number
         current_year = datetime.now().strftime('%y')  # get the current year with two-digits
         current_month = datetime.now().strftime('%m')  # get the current year with two-digits
-        invoice_nr = current_year + current_month + str(int(last_invoice[-3:]) + 1).zfill(3)  # zfill=3 formato YYMM009
+        invoice_nr = current_year + current_month + str(int(last_invoice[-3:]) + 1).zfill(3)  # zfill=3 format YYMM999
         st.divider()
         st.subheader('Nro: ' + invoice_nr)
 
@@ -440,7 +445,7 @@ if tab == TAB_2:  # Create NEW Invoice
                 form_invoice_note = st.text_area('Nota:', value=nota_iva0,
                                                  placeholder='Introduzca una nota para incluir en la factura...')
 
-                # area to display the total amount of the invoice
+                # area to display the bank selection radiobutton and the total amount of the invoice
                 col1, buff, col2 = st.columns([0.5, 0.15, 0.35])
                 with col1:
                     st.divider()
@@ -454,7 +459,7 @@ if tab == TAB_2:  # Create NEW Invoice
                     )
                 with col2:
                     st.divider()
-                    # Formatando o valor como string com separador de milhar e duas casas decimais
+                    # Formatting the value as string with point as thousand, comma as decimal and two decimal places
                     total_invoice_formatado = "€ {:,.2f}".format(total_invoice).replace(",", "X").replace(".",
                                                                                                           ",").replace(
                         "X", ".")
@@ -484,7 +489,7 @@ if tab == TAB_2:  # Create NEW Invoice
                         retencion, total, form_invoice_note, 'Recibir']
                     # print(f'Registro {i}:', registro[i])
 
-                # ajustando o formato dos valores para Euro
+                # Adjusting the values format to Euro
                 base_imponible_sum_formatado = "€ {:,.2f}".format(base_imponible_sum).replace(",", "X").replace(".",
                                                                                                                 ",").replace(
                     "X", ".")
@@ -496,19 +501,19 @@ if tab == TAB_2:  # Create NEW Invoice
                     "X", ".")
                 st.divider()
 
-                # --- INICIO criação do documento
-                # Nome do novo documento em PDF
+                # --- BEGIN of PDF document creation
+                # New PDF document name
                 new_document = f'Factura-{invoice_nr}'
-                # Criando uma cópia do Template da invoice em PDF
+                # Making a copy of the Google Doc template to create the new invoice in PDF
                 copied_file = service_drive.files().copy(
                     fileId=INVOICE_TEMPLATE_ID,
                     body={'name': new_document}
                 ).execute()
 
-                # Pegando o ID do documento copiado
+                # Get the document ID from the copied file
                 new_document_id = copied_file.get('id')
 
-                # Dicionário com as substituições (chave é o placeholder no Template, valor é o que será inserido)
+                # Creating a dictionary for the substitutions (key: placeholder in template, value: to be inserted)
                 substituicoes = {
                     'invoice_nr': str(invoice_nr),
                     'invoice_date': invoice_date,
@@ -533,7 +538,8 @@ if tab == TAB_2:  # Create NEW Invoice
                     'form_banco': form_banco
                 }
 
-                # Adiciona dinamicamente os itens (linhas) de serviços no dicionário de substituições
+                # Dinamically add the items (lines) of the invoice service descriptions in the dictionary
+                # Maximum number of lines = 12 (set in the template file)
                 for idx in range(num_rows):
                     description = st.session_state[f'description{idx}']
                     qty = st.session_state[f'qty{idx}']
@@ -547,83 +553,55 @@ if tab == TAB_2:  # Create NEW Invoice
                     substituicoes[f'qty{idx}'] = str(qty)
                     substituicoes[f'value{idx}'] = value_formatado
                     substituicoes[f'base{idx}'] = base_formatado
-                # Deixando em Branco as demais linhas da fatura que não estão preenchidas
-                for idx in range(12 - num_rows):
+
+                for idx in range(12 - num_rows):  # Enter 'blank' in the rest of the lines with no content
                     substituicoes[f'description{idx + num_rows}'] = ''
                     substituicoes[f'qty{idx + num_rows}'] = ''
                     substituicoes[f'value{idx + num_rows}'] = ''
                     substituicoes[f'base{idx + num_rows}'] = ''
                 # print('substituicoes >>>>>>\n', substituicoes)
-                # Substitui os placeholders no documento
+                # Replace the placeholders in the document
                 doc_factura = substituir_placeholders(new_document_id, substituicoes)
-                # --- FIM criação do documento
+                # --- END of PDF document creation
 
+                # Create columns and buttons to show PDF and SAVE the invoice in spreadsheet
                 action0, action1, action2 = st.columns(3)
-                with action0:
-                    ver_pdf = st.button('Ver PDF', type='primary', use_container_width=True)
+                with action0:  # DOWNLOAD PDF button
+                    pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
+                    # Usa io.BytesIO para manter o PDF em memória
+                    pdf_data = pdf_request.execute()
+                    st.download_button(
+                        label="Ver archivo PDF",
+                        data=pdf_data,
+                        file_name=new_document,
+                        mime="application/pdf"
+                    )
 
-                with action2:
+                with action2:  # SAVE invoice button
                     add_invoice = st.button('Salvar Factura', type='primary', use_container_width=True)
 
-                if add_invoice:
-                    # Exportando o documento como PDF
-                    # print('exportando o documento como PDF...')
-                    # pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
-
-                    # Salvando o PDF localmente
-                    # print('salvando o PDF localmente...')
-                    # with open(f'{new_document}.pdf', 'wb') as pdf_file:
-                    #     pdf_file.write(pdf_request.execute())
-
-                    # Salvando o PDF na pasta no Google Drive
-                    # print("criando o pdf_metadata...")
-                    # Metadados do arquivo PDF
+                if add_invoice:  # Save the invoice
+                    # Export document as PDF
+                    pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
                     pdf_metadata = {
                         'name': new_document,
                         'parents': [PDF_FOLDER_ID]  # Coloca o arquivo dentro da pasta específica
                     }
-                    # Exportar o documento como PDF e criar o arquivo no Google Drive
-                    pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
-
-                    # Salvando o PDF no Google Drive
-                    # print("salvando o PDF na pasta 'Facturas' no Google Drive...")
                     media = googleapiclient.http.MediaIoBaseUpload(io.BytesIO(pdf_request.execute()),
                                                                    mimetype='application/pdf')
-
-                    # Criar o arquivo PDF na pasta especificada
+                    # print("salvando o PDF na pasta 'Facturas' no Google Drive...")
                     file = service_drive.files().create(body=pdf_metadata, media_body=media, fields='id').execute()
                     # print('Arquivo PDF salvo no Google Drive com ID:', file.get('id'))
 
+                    # Create new record(s) with the invoice line(s) in the spreadsheet
                     for i in range(num_rows):
                         request = sheet.values().append(spreadsheetId=SPREADSHEET_ID,
                                                         range="facturas", valueInputOption="USER_ENTERED",
                                                         body={"values": [registro[i]]}).execute()
                     st.success(f'Factura {invoice_nr} creada con éxito.', icon='✅')
-
+                    # Delete all session state keys
                     for key in st.session_state.keys():
                         del st.session_state[key]
                     st.session_state.client_key = ''
-                    # st.write(st.session_state)
-
-                if ver_pdf:
-                    # print('exportando o documento como PDF...')
-                    pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
-                    # Usa io.BytesIO para manter o PDF em memória
-                    pdf_data = pdf_request.execute()
-                    # Mostra o PDF diretamente na interface
-                    # Converte os dados binários para uma URL em base64
-                    pdf_base64 = base64.b64encode(pdf_data).decode('utf-8')
-                    # Renderiza o PDF na página usando um iframe
-                    pdf_display = f'''
-                        <style>
-                        iframe {{
-                            width: 100%;
-                            height: calc(100vw*0.70707);  /*proporção A4 (210/297), ajusta alturaXlargura da janela*/
-                        }}
-                        </style>
-                        <iframe src="data:application/pdf;base64,{pdf_base64}#toolbar=0&navpanes=0&scrollbar=0&view=Fit"
-                        type="application/pdf"></iframe>
-                    '''
-                    st.markdown(pdf_display, unsafe_allow_html=True)
 
     st.divider()
