@@ -411,7 +411,7 @@ if tab == TAB_2:  # Create NEW Invoice
                     with grid[0]:
                         line = st.text_input('Descripción *', value='', placeholder='', key=f'description{row}')
                     with grid[1]:
-                        line_qty = st.number_input('Cant.', min_value=1, max_value=999, key=f'qty{row}')
+                        line_qty = st.number_input('Cant.', min_value=1.0, format="%0.2f", key=f'qty{row}')
                     with grid[2]:
                         line_value = st.number_input('Val.unit.', min_value=0.0, format="%0.2f", key=f'value{row}')
                     with grid[3]:
