@@ -115,7 +115,7 @@ sheet = service.spreadsheets()
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
 st.header("Registro de clientes 🔤")
-st.sidebar.markdown("# Clientes 🔤")
+# st.sidebar.markdown("# Clientes 🔤")
 
 # Create DataFrame with ALL client values from spreadsheet
 df_clientes = leitura_worksheet('clientes')
