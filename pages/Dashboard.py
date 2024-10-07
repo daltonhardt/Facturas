@@ -80,7 +80,7 @@ selected = option_menu(
     default_index=0
 )
 
-st.sidebar.markdown("# Dashboard 📈")
+# st.sidebar.markdown("# Dashboard 📈")
 
 # set the locale to Spanish (Spain)
 locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
