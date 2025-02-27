@@ -169,6 +169,8 @@ service_drive = build("drive", "v3", credentials=creds)
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
+version_number = '2410.02'
+st.sidebar.text(f'[ver. {version_number}]')
 st.header("Base de Datos Facturas 🧾")
 # st.sidebar.markdown("# Facturas 🧾")
 
@@ -500,9 +502,7 @@ if tab == TAB_2:  # Change Invoice
                 with grid[1]:
                     line_qty = st.number_input('Cant.', value=qty, min_value=1.0, key=f'qty{row}')
                 with grid[2]:
-                    line_value = st.number_input('Val.unit.', value=valor, min_value=0.0, format="%0.2f",
-                                                 key=f'value{row}')
-
+                    line_value = st.number_input('Val.unit.', value=valor, format="%0.2f", key=f'value{row}')
                 with grid[3]:
                     base_imponible = line_qty * line_value
                     line_base = st.number_input('Base imp.', value=base_imponible, format="%0.2f", disabled=True,
@@ -831,7 +831,7 @@ if tab == TAB_3:  # Create NEW Invoice
                     with grid[1]:
                         line_qty = st.number_input('Cant.', min_value=1.0, key=f'qty{row}')
                     with grid[2]:
-                        line_value = st.number_input('Val.unit.', min_value=0.0, format="%0.2f", key=f'value{row}')
+                        line_value = st.number_input('Val.unit.', format="%0.2f", key=f'value{row}')
                     with grid[3]:
                         base_imponible = line_qty * line_value
                         line_base = st.number_input('Base imp.', value=base_imponible, format="%0.2f", disabled=True,
