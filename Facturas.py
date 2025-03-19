@@ -81,7 +81,7 @@ def update_status_facturas(df):
 
 
 # Function to change the STATUS of the invoice
-@st.dialog("A T E N C I Ó N")
+@st.experimental_dialog("A T E N C I Ó N")
 def change_invoice_status(index_sequence, status, fecha):
     st.write(f"¿Confirma?")
     if st.button("OK"):
