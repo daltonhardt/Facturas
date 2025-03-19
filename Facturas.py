@@ -1,7 +1,9 @@
 # Invoice system developed for El Shaddai - Barcelona
 # Author:  Dalton Hardt
 # Created:  22-Aug-2024
-# Last update:  4-Sep-2024
+# version 2410.01: first release
+# version 2410.02: functionality to EDIT the invoice
+# version 2503.03: invoice number change from YYMM999 to 999999
 
 import googleapiclient
 import streamlit as st
@@ -79,7 +81,7 @@ def update_status_facturas(df):
 
 
 # Function to change the STATUS of the invoice
-@st.experimental_dialog("A T E N C I Ó N")
+@st.dialog("A T E N C I Ó N")
 def change_invoice_status(index_sequence, status, fecha):
     st.write(f"¿Confirma?")
     if st.button("OK"):
@@ -169,7 +171,7 @@ service_drive = build("drive", "v3", credentials=creds)
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-version_number = '2410.02'
+version_number = '2503.03'
 st.sidebar.text(f'[ver. {version_number}]')
 st.header("Base de Datos Facturas 🧾")
 # st.sidebar.markdown("# Facturas 🧾")
@@ -354,7 +356,8 @@ if tab == TAB_2:  # Change Invoice
     st.divider()
     st.subheader('Factura a editar:')
 
-    df_facturas_recibir = df_total_facturas[df_total_facturas['status'] == 'Recibir'].reset_index(drop=True)
+    # df_facturas_recibir = df_total_facturas[df_total_facturas['status'] == 'Recibir'].reset_index(drop=True)
+    df_facturas_recibir = df_total_facturas[df_total_facturas['status'].isin(['Recibir', 'Atrasado'])].reset_index(drop=True)
     df_facturas_recibir.index += 1  # making index start from 1 to stay equal with "df_clientes"
 
     coluna, buffer = st.columns([0.3, 0.7])
@@ -764,7 +767,8 @@ if tab == TAB_3:  # Create NEW Invoice
     # invoice_num = int(last_invoice[-3:]) + 1  # add 1 to create the new invoice sequential number
     current_year = datetime.now().strftime('%y')  # get the current year with two-digits
     current_month = datetime.now().strftime('%m')  # get the current year with two-digits
-    invoice_nr = current_year + current_month + str(int(last_invoice[-3:]) + 1).zfill(3)  # zfill=3 format YYMM999
+    # invoice_nr = current_year + current_month + str(int(last_invoice[-3:]) + 1).zfill(3)  # zfill=3 format YYMM999
+    invoice_nr = str(int(last_invoice) + 1).zfill(6)  # zfill=6 format 999999
 
     st.subheader('Nueva factura: ' + invoice_nr)
 
