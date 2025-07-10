@@ -173,7 +173,7 @@ service_drive = build("drive", "v3", credentials=creds)
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-version_number = '2503.03'
+version_number = '2507.01'
 st.sidebar.text(f'[ver. {version_number}]')
 st.header("Base de Datos Facturas 🧾")
 # st.sidebar.markdown("# Facturas 🧾")
