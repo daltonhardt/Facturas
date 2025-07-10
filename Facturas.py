@@ -5,6 +5,7 @@
 # version 2410.01: first release
 # version 2410.02: functionality to EDIT the invoice
 # version 2503.03: invoice number change from YYMM999 to 999999
+# version 2507.01: df_clientes updated to df_clientes_activos
 
 import googleapiclient
 import streamlit as st
