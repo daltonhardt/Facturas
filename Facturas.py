@@ -1,6 +1,7 @@
 # Invoice system developed for El Shaddai - Barcelona
 # Author:  Dalton Hardt
 # Created:  22-Aug-2024
+# Last update:  10-Jul-2025
 # version 2410.01: first release
 # version 2410.02: functionality to EDIT the invoice
 # version 2503.03: invoice number change from YYMM999 to 999999
@@ -356,7 +357,6 @@ if tab == TAB_2:  # Change Invoice
     st.divider()
     st.subheader('Factura a editar:')
 
-    # df_facturas_recibir = df_total_facturas[df_total_facturas['status'] == 'Recibir'].reset_index(drop=True)
     df_facturas_recibir = df_total_facturas[df_total_facturas['status'].isin(['Recibir', 'Atrasado'])].reset_index(drop=True)
     df_facturas_recibir.index += 1  # making index start from 1 to stay equal with "df_clientes"
 
@@ -414,13 +414,13 @@ if tab == TAB_2:  # Change Invoice
             df_facturas_last_rows.reset_index(drop=True, inplace=True)
             # print('df_facturas_last_rows:\n', df_facturas_last_rows)
 
-            # print('df_ clientes:\n', df_clientes)
-            for index_cliente in range(len(df_clientes)):
-                # print(f'{index_cliente} de {len(df_clientes)}')
-                # print(df_clientes.iloc[index_cliente]['cod_cliente'], f'buscando {invoice_cod_client}')
-                if df_clientes.iloc[index_cliente]['cod_cliente'] == invoice_cod_client:
+            # print('df_clientes_activos:\n', df_clientes_activos)
+            for index_cliente in range(len(df_clientes_activos)):
+                # print(f'{index_cliente} de {len(df_clientes_activos)}')
+                # print(df_clientes_activos.iloc[index_cliente]['cod_cliente'], f'buscando {invoice_cod_client}')
+                if df_clientes_activos.iloc[index_cliente]['cod_cliente'] == invoice_cod_client:
                     index_cliente += 1
-                    # print(f'index no df_clientes = {str(index_cliente)}')
+                    # print(f'index no df_clientes_activos = {str(index_cliente)}')
                     registro = leitura_registro_cliente(index_cliente)
                     # for i in range(len(registro)):
                     #     st.text(f'{i} - {registro[i]}')
@@ -451,11 +451,11 @@ if tab == TAB_2:  # Change Invoice
             # show the invoice form container and fields completed with initial values
             # select Client name from dataframe
             # print('df_clientes_activos:\n', df_clientes_activos.sort_values(['cod_cliente', 'nombre_cliente']))
-            lista_clientes = df_clientes_activos['nombre_cliente'].tolist()
-            # print(f'lista_clientes = {lista_clientes}')
+            lista_clientes_activos = df_clientes_activos['nombre_cliente'].tolist()
+            # print(f'lista_clientes_activos = {lista_clientes_activos}')
             # print('client_index_value = ', client_index_value)
-            # print(f'cliente no lista_clientes = {lista_clientes[client_index_value]}')
-            client = st.selectbox('Cliente *', lista_clientes,
+            # print(f'cliente no lista_clientes_activos = {lista_clientes_activos[client_index_value]}')
+            client = st.selectbox('Cliente *', lista_clientes_activos,
                                   index=client_index_value, placeholder='Seleccione...')
 
             col1, col2, col3, col4, col5 = st.columns(5)
@@ -781,10 +781,10 @@ if tab == TAB_3:  # Create NEW Invoice
     if client is not None:
         with st.container(border=True):
             # st.text(f'Cliente seleccionado: {client}')
-            for index_cliente in range(len(df_clientes)):
-                if df_clientes.iloc[index_cliente]['nombre_cliente'] == client:
+            for index_cliente in range(len(df_clientes_activos)):
+                if df_clientes_activos.iloc[index_cliente]['nombre_cliente'] == client:
                     index_cliente += 1
-                    # print(f'index no df_clientes = {str(index_cliente)}')
+                    # print(f'index no df_clientes_activos = {str(index_cliente)}')
                     registro = leitura_registro_cliente(index_cliente)
                     # for i in range(len(registro)):
                     #     st.text(f'{i} - {registro[i]}')
