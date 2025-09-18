@@ -1,11 +1,12 @@
 # Invoice system developed for El Shaddai - Barcelona
 # Author:  Dalton Hardt
 # Created:  22-Aug-2024
-# Last update:  10-Jul-2025
+# Last update:  18-sep-2025
 # version 2410.01: first release
 # version 2410.02: functionality to EDIT the invoice
 # version 2503.03: invoice number change from YYMM999 to 999999
 # version 2507.01: df_clientes updated to df_clientes_activos
+# version 2509.01: quantity changed min_value from 1.0 to 0.01
 
 import googleapiclient
 import streamlit as st
@@ -504,7 +505,7 @@ if tab == TAB_2:  # Change Invoice
                 with grid[0]:
                     line = st.text_input('Descripción *', value=invoice_line, placeholder='', key=f'description{row}')
                 with grid[1]:
-                    line_qty = st.number_input('Cant.', value=qty, min_value=1.0, key=f'qty{row}')
+                    line_qty = st.number_input('Cant.', value=qty, min_value=0.01, key=f'qty{row}')
                 with grid[2]:
                     line_value = st.number_input('Val.unit.', value=valor, format="%0.2f", key=f'value{row}')
                 with grid[3]:
@@ -834,7 +835,7 @@ if tab == TAB_3:  # Create NEW Invoice
                     with grid[0]:
                         line = st.text_input('Descripción *', value='', placeholder='', key=f'description{row}')
                     with grid[1]:
-                        line_qty = st.number_input('Cant.', min_value=1.0, key=f'qty{row}')
+                        line_qty = st.number_input('Cant.', min_value=0.01, key=f'qty{row}')
                     with grid[2]:
                         line_value = st.number_input('Val.unit.', format="%0.2f", key=f'value{row}')
                     with grid[3]:
