@@ -1,7 +1,7 @@
 # Invoice system developed for El Shaddai - Barcelona
 # Author:  Dalton Hardt
 # Created:  22-Aug-2024
-# Last update:  18-sep-2025
+# Last update:  08-oct-2025
 # version 2410.01: first release
 # version 2410.02: functionality to EDIT the invoice
 # version 2503.03: invoice number change from YYMM999 to 999999
