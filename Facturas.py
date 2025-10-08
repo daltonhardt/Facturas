@@ -7,6 +7,8 @@
 # version 2503.03: invoice number change from YYMM999 to 999999
 # version 2507.01: df_clientes updated to df_clientes_activos
 # version 2509.01: quantity changed min_value from 1.0 to 0.01
+# version 2510.01: update leitura_registro_cliente
+
 
 import googleapiclient
 import streamlit as st
@@ -39,7 +41,18 @@ def leitura_registro_cliente(client_id):
     try:
         result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range='clientes').execute()
         values = result.get("values", [])
-        return values[client_id]  # return the record values in a list
+
+        header = values[0]  # first line contains header
+        # print("=== header:\n", header)
+        data = values[1:]  # next lines contain data
+        # print("=== data:\n", data)
+
+        # Filter records (rows) with status_cliente = "activo"
+        status_index = header.index("status_cliente")
+        ativos = [row for row in data if len(row) > status_index and row[status_index].strip().lower() == "activo"]
+        return ativos[client_id]
+        # print("values =\n", values)
+        # return values[client_id]  # return the record values in a list
     except (RuntimeError, TypeError, NameError):
         pass
 
@@ -174,7 +187,7 @@ service_drive = build("drive", "v3", credentials=creds)
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-version_number = '2509.01'
+version_number = '2510.01'
 st.sidebar.text(f'[ver. {version_number}]')
 st.header("Base de Datos Facturas 🧾")
 # st.sidebar.markdown("# Facturas 🧾")
@@ -421,7 +434,7 @@ if tab == TAB_2:  # Change Invoice
                 # print(f'{index_cliente} de {len(df_clientes_activos)}')
                 # print(df_clientes_activos.iloc[index_cliente]['cod_cliente'], f'buscando {invoice_cod_client}')
                 if df_clientes_activos.iloc[index_cliente]['cod_cliente'] == invoice_cod_client:
-                    index_cliente += 1
+                    # index_cliente += 1
                     # print(f'index no df_clientes_activos = {str(index_cliente)}')
                     registro = leitura_registro_cliente(index_cliente)
                     # for i in range(len(registro)):
@@ -785,7 +798,7 @@ if tab == TAB_3:  # Create NEW Invoice
             # st.text(f'Cliente seleccionado: {client}')
             for index_cliente in range(len(df_clientes_activos)):
                 if df_clientes_activos.iloc[index_cliente]['nombre_cliente'] == client:
-                    index_cliente += 1
+                    # index_cliente += 1
                     # print(f'index no df_clientes_activos = {str(index_cliente)}')
                     registro = leitura_registro_cliente(index_cliente)
                     # for i in range(len(registro)):
