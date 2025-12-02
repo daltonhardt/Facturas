@@ -39,7 +39,7 @@ def delete_client(*args):
                               range=celula, valueInputOption="USER_ENTERED",
                               body={"values": [change_status_cliente]}).execute()
         # print(f"Registro: {args[2]} - {args[3]} na celula {celula} foi ¡borrado!")
-        st.success(f"¡El cliente  {args[3]}  ha sido borrado!", icon='✅')
+        st.success(f"¡El cliente  {args[3]}  ha sido inactivado!", icon='✅')
         st.rerun()
 
     elif st.button("Cancel"):
@@ -101,8 +101,6 @@ account_info = json.loads(account_info_str)
 
 SCOPES = st.secrets.google_definition["SCOPES"]
 SPREADSHEET_ID = st.secrets.google_definition["SPREADSHEET_ID"]
-INVOICE_TEMPLATE_ID = st.secrets.google_definition["INVOICE_TEMPLATE_ID"]
-PDF_FOLDER_ID = st.secrets.google_definition["PDF_FOLDER_ID"]
 
 # ------- BEGIN Google Definitions -------
 # for Google SHEETS
@@ -114,8 +112,11 @@ sheet = service.spreadsheets()
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-st.header("Registro de clientes 🔤")
-# st.sidebar.markdown("# Clientes 🔤")
+version_number = '2410.01'
+st.sidebar.text(f'[ver. {version_number}]')
+
+st.header(" 🔤 Registro de clientes")
+# st.sidebar.markdown("# 🔤 Clientes")
 
 # Create DataFrame with ALL client values from spreadsheet
 df_clientes = leitura_worksheet('clientes')
@@ -134,14 +135,13 @@ df_clientes_inactivos.index += 1  # making index start from 1 to stay equal with
 # Tabs
 TAB_0 = 'Clientes Activos'
 TAB_1 = 'Clientes Inactivos'
-TAB_2 = 'Añadir nuevo Cliente'
+TAB_2 = 'Crear nuevo cliente'
 tab = option_menu(
     menu_title='',
-    options=['Clientes Activos', 'Clientes Inactivos', 'Añadir nuevo Cliente'],
+    options=['Clientes Activos', 'Clientes Inactivos', 'Crear nuevo cliente'],
     icons=['star', 'bi-emoji-frown', 'person-plus-fill'],
     menu_icon='cast',
-    orientation='horizontal',
-    default_index=0
+    orientation='horizontal'
 )
 
 if tab == TAB_0:  # Show ONLY ACTIVE clients
@@ -154,17 +154,17 @@ if tab == TAB_0:  # Show ONLY ACTIVE clients
             # print(index, '--', index % num_columns)
             with columns[index % num_columns]:
                 with st.expander(row['nombre_cliente'], expanded=EXPANDED):
-                    col1, col2 = st.columns([0.4, 0.6])
+                    col1, col2 = st.columns([0.3, 0.7])
                     with col1:
-                        st.markdown(f"**Codigo**  \n"
-                                    f"**CIF/NIF**  \n"
-                                    f"**Contacto**  \n"
-                                    f"**Teléfono**  \n"
-                                    f"**Prov/Ciudad**  \n"
-                                    f"**Dirección**  \n"
-                                    f"**Cod. Postal**  \n"
-                                    f"**Email**  \n"
-                                    f"**Obs.**  "
+                        st.markdown(f"**Codigo:**  \n"
+                                    f"**CIF/NIF:**  \n"
+                                    f"**Contacto:**  \n"
+                                    f"**Teléfono:**  \n"
+                                    f"**Prov/Ciudad:**  \n"
+                                    f"**Dirección:**  \n"
+                                    f"**Cod. Postal:**  \n"
+                                    f"**Email:**  \n"
+                                    f"**Obs.:**  "
                                     )
                     with col2:
                         st.markdown(f"{row['cod_cliente']}  \n"
@@ -254,7 +254,7 @@ if tab == TAB_2:  # Create NEW Client
         new_province = st.selectbox('Provincia:', df_ciudades['provincia'].drop_duplicates().sort_values(),
                                     index=None, placeholder='Seleccione')
         # st.write("Usted ha selecionado:", new_province)
-        # getting all cities from seleted province
+        # getting all cities from selected province
         ciudades = df_ciudades[df_ciudades['provincia'] == new_province].reset_index(drop=True).drop(
             columns=['provincia'])
         new_city = st.selectbox('Ciudad:', options=ciudades,
@@ -286,4 +286,19 @@ if tab == TAB_2:  # Create NEW Client
 # show all Clients
 st.divider()
 st.subheader("Lista de TODOS los clientes")
-st.dataframe(df_clientes)
+st.dataframe(df_clientes,
+             hide_index=True,
+             column_order=(
+                 'cod_cliente',
+                 'status_cliente',
+                 'nombre_cliente',
+                 'cif',
+                 'provincia',
+                 'ciudad',
+                 'direccion',
+                 'postal',
+                 'contacto',
+                 'email',
+                 'telefono',
+                 'obs')
+             )
