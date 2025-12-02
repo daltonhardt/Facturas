@@ -254,7 +254,7 @@ if uploaded_file:
                         end_time = time.perf_counter()  # ⏱️ FIM DO TIMER
                         elapsed = end_time - start_time
                         st.metric(label="⏱️ Tiempo de conversión",
-                                  value=format(elapsed))
+                                  value=format_hms(elapsed))
 
                         # df_to_save = st.data_editor(
                         #     df,
