@@ -362,12 +362,18 @@ if tab == TAB_1:
             for row in range(num_rows):
                 with grid[0]:
                     description_key = f'albaran_description{row}'
-                    albaran_line = st.text_input('Descripción *', value='', placeholder='', key=description_key)
+                    if description_key not in state:
+                        state[description_key] = ''
+                    albaran_line = st.text_input('Descripción *', placeholder='', key=description_key)
                 with grid[1]:
                     qty_key = f'albaran_qty{row}'
-                    albaran_line_qty = st.number_input('Cant.', min_value=0.01, value=1.0, key=qty_key)
+                    if qty_key not in state:
+                        state[qty_key] = 1.0
+                    albaran_line_qty = st.number_input('Cant.', min_value=0.01, key=qty_key)
                 with grid[2]:
                     value_key = f'albaran_value{row}'
+                    if value_key not in state:
+                        state[value_key] = 0.0
                     albaran_line_value = st.number_input('Val.unit.', format="%0.2f", key=value_key)
                 with grid[3]:
                     albaran_base_imponible = albaran_line_qty * albaran_line_value
