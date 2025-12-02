@@ -87,12 +87,10 @@ def fix_json_quotes(s: str) -> str:
     return ''.join(out)
 
 
-def format_hms(segundos):
-    h = int(segundos // 3600)
-    m = int((segundos % 3600) // 60)
-    s = int(segundos % 60)
-    return f"{h:02d}:{m:02d}:{s:02d}"
-
+def formatar_tempo(segundos):
+    minutos = int(segundos // 60)
+    segundos_restantes = int(segundos % 60)
+    return f"{minutos:02d}min e {segundos_restantes:02d}seg"
 
 # Define Gemini AI prompt instructions
 prompt = ("You work for an industrial service company and your job is to create a budget offer "
@@ -254,7 +252,7 @@ if uploaded_file:
                         end_time = time.perf_counter()  # ⏱️ FIM DO TIMER
                         elapsed = end_time - start_time
                         st.metric(label="⏱️ Tiempo de conversión",
-                                  value=format_hms(elapsed))
+                                  value=formatar_tempo(elapsed))
 
                         # df_to_save = st.data_editor(
                         #     df,
