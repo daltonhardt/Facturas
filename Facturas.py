@@ -6,9 +6,10 @@
 # version 2410.02: functionality to EDIT the invoice
 # version 2503.03: invoice number change from YYMM999 to 999999
 # version 2507.01: df_clientes updated to df_clientes_activos
-# version 2509.01: quantity changed min_value from 1.0 to 0.01
+# version 2509.01: quantity min_value changed from 1.0 to 0.01
 # version 2510.01: update leitura_registro_cliente
-
+# version 2511.01: include budget (presupuesto) functionality
+# version 2512.01: include AI to read import data
 
 import googleapiclient
 import streamlit as st
@@ -21,7 +22,7 @@ from datetime import datetime, timedelta
 import locale
 import io
 import json
-
+import time
 
 # Function to READ/GET values from spreadsheet
 def leitura_worksheet(worksheet):
@@ -30,7 +31,7 @@ def leitura_worksheet(worksheet):
         values = result.get("values", [])
         df = pd.DataFrame(values)  # transform all values in DataFrame
         df.columns = df.iloc[0]  # set column names equal to values in row index position 0
-        df = df[1:]  # remove first row from DataFrame (column names)
+        df = df[1:]  # remove the first row from DataFrame (column names)
         return df
     except (RuntimeError, TypeError, NameError):
         pass
@@ -44,7 +45,7 @@ def leitura_registro_cliente(client_id):
 
         header = values[0]  # first line contains header
         # print("=== header:\n", header)
-        data = values[1:]  # next lines contain data
+        data = values[1:]    # next lines contain data
         # print("=== data:\n", data)
 
         # Filter records (rows) with status_cliente = "activo"
@@ -52,7 +53,7 @@ def leitura_registro_cliente(client_id):
         ativos = [row for row in data if len(row) > status_index and row[status_index].strip().lower() == "activo"]
         return ativos[client_id]
         # print("values =\n", values)
-        # return values[client_id]  # return the record values in a list
+        # return values[client_id] # return the record values in a list
     except (RuntimeError, TypeError, NameError):
         pass
 
@@ -67,7 +68,7 @@ def leitura_registro_factura(invoice_id):
         pass
 
 
-# Function to FORMAT CURRENCY to European standard (Spain)
+# Function to FORMAT CURRENCY to a European standard (Spain)
 def format_currency(amount, currency_symbol="€", locale_name="es_ES.UTF-8", decimal_places=2):
     # Set the locale for formatting
     locale.setlocale(locale.LC_ALL, locale_name)
@@ -168,7 +169,7 @@ account_info = json.loads(account_info_str)
 SCOPES = st.secrets.google_definition["SCOPES"]
 SPREADSHEET_ID = st.secrets.google_definition["SPREADSHEET_ID"]
 INVOICE_TEMPLATE_ID = st.secrets.google_definition["INVOICE_TEMPLATE_ID"]
-PDF_FOLDER_ID = st.secrets.google_definition["PDF_FOLDER_ID"]
+INVOICE_PDF_FOLDER_ID = st.secrets.google_definition["INVOICE_PDF_FOLDER_ID"]
 # for Google SHEETS
 creds = service_account.Credentials.from_service_account_info(account_info, scopes=SCOPES)
 # SPREADSHEET_ID = "1FD6oaUPwjyKJo1yLe3UWBBdN1o1CgcgOSaEqW8ZSk24"  # The ID of the spreadsheet
@@ -187,9 +188,9 @@ service_drive = build("drive", "v3", credentials=creds)
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-version_number = '2510.01'
+version_number = '2512.01'
 st.sidebar.text(f'[ver. {version_number}]')
-st.header("Base de Datos Facturas 🧾")
+st.header("🧾 Base de Datos Facturas")
 # st.sidebar.markdown("# Facturas 🧾")
 
 # set the locale to Spanish (Spain)
@@ -227,7 +228,7 @@ df_facturas = leitura_worksheet('facturas')
 
 # Add client name (nombre_cliente) column mapping by client unique code (cod_cliente)
 df_facturas['nombre_cliente'] = df_facturas.cod_cliente.map(
-    df_clientes.set_index('cod_cliente')['nombre_cliente'].to_dict())
+    df_clientes_activos.set_index('cod_cliente')['nombre_cliente'].to_dict())
 
 # Adjusting the float numbers to match european standard
 df_facturas['cantidad'] = df_facturas['cantidad'].apply(
@@ -263,8 +264,8 @@ tab = option_menu(
     icons=['list-task', 'bi-pencil-square', 'bi-pencil-square', 'bi-file-earmark-plus'],
     menu_icon='cast',
     orientation='horizontal',
-    default_index=0
 )
+
 
 if tab == TAB_0:  # Show ALL invoices
     st.divider()
@@ -282,12 +283,12 @@ if tab == TAB_0:  # Show ALL invoices
 
     st.divider()
     # Show all invoices unpaid
-    st.subheader('Facturas atrasadas   😳 ')
+    st.subheader('Facturas vencidas   😳 ')
     df_facturas_atrasadas = df_total_facturas[df_total_facturas['status'] == 'Atrasado'].reset_index(drop=True)
     df_facturas_atrasadas.index += 1  # making index start from 1 to stay equal with "df_clientes"
     if len(df_facturas_atrasadas.index) > 0:
-        st.dataframe(df_facturas_atrasadas)
-        # st.dataframe(df_facturas_atrasadas.iloc[::-1])  # show dataframe in reverse order (from newest to oldest)
+        st.dataframe(df_facturas_atrasadas,
+                     column_order=('nro_factura','plazo_pago', 'total', 'nombre_cliente', 'descripcion'))
     else:
         st.success(f"¡No hay facturas retrasadas!", icon='✅')
 
@@ -382,7 +383,7 @@ if tab == TAB_2:  # Change Invoice
                                   label_visibility='hidden')
     if invoice_nr is not None:
         with st.container(border=True):
-            index_spreadsheet_sequence = []  # initialize a list to recieve the line indexes of the same invoice
+            index_spreadsheet_sequence = []  # initialize a list to store the line indexes of the same invoice
             invoice_lines = []
             line = []
             invoice_num_lines = 0
@@ -435,13 +436,13 @@ if tab == TAB_2:  # Change Invoice
                 # print(df_clientes_activos.iloc[index_cliente]['cod_cliente'], f'buscando {invoice_cod_client}')
                 if df_clientes_activos.iloc[index_cliente]['cod_cliente'] == invoice_cod_client:
                     # index_cliente += 1
-                    # print(f'index no df_clientes_activos = {str(index_cliente)}')
+                    # print(f'ACHEI>>> index no df_clientes_activos = {str(index_cliente)}')
                     registro = leitura_registro_cliente(index_cliente)
                     # for i in range(len(registro)):
                     #     st.text(f'{i} - {registro[i]}')
                     client_cod = invoice_cod_client
                     client_name = registro[1]
-                    client_index_value = index_cliente - 1
+                    client_index_value = index_cliente
                     client_cif = registro[2]
                     client_prov = registro[3]
                     client_city = registro[4]
@@ -500,7 +501,7 @@ if tab == TAB_2:  # Change Invoice
             # print('linhas_a_mais = ', linhas_a_mais)
 
             # columns to lay out the inputs
-            grid = st.columns([0.35, 0.06, 0.10, 0.10, 0.10, 0.10, 0.10])
+            grid = st.columns([0.42, 0.08, 0.10, 0.10, 0.10, 0.10, 0.10])
             total_invoice = 0.0
             base_imponible_sum = 0.0
             cuota_tributaria_sum = 0.0
@@ -542,7 +543,7 @@ if tab == TAB_2:  # Change Invoice
                     cuota_tributaria_sum += cuota_tributaria
                     valor_retencion_sum += valor_retencion
 
-            if form_invoice_iva == 0:  # if IVA=0% then this note is obligatiry in Spain
+            if form_invoice_iva == 0:  # if IVA=0% then this note is obligatory in Spain
                 if 'Operación de inversión del sujeto pasivo' in invoice_nota:
                     nota_iva0 = invoice_nota
                 else:
@@ -658,7 +659,7 @@ if tab == TAB_2:  # Change Invoice
                 'form_banco': form_banco
             }
 
-            # Dinamically add the items (lines) of the invoice service descriptions in the dictionary
+            # Dynamically add the items (lines) of the invoice service descriptions in the dictionary
             # Maximum number of lines = 12 (set in the template file)
             for idx in range(num_rows):
                 description = st.session_state[f'description{idx}']
@@ -704,7 +705,7 @@ if tab == TAB_2:  # Change Invoice
                 pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
                 pdf_metadata = {
                     'name': new_document,
-                    'parents': [PDF_FOLDER_ID]  # Coloca o arquivo dentro da pasta específica
+                    'parents': [INVOICE_PDF_FOLDER_ID]  # Coloca o arquivo dentro da pasta específica
                 }
                 media = googleapiclient.http.MediaIoBaseUpload(io.BytesIO(pdf_request.execute()),
                                                                mimetype='application/pdf')
@@ -716,7 +717,7 @@ if tab == TAB_2:  # Change Invoice
                 # First clean all cells from spreadsheet
                 # Recuperando os metadados da planilha para obter o sheetId
                 spreadsheet = sheet.get(spreadsheetId=SPREADSHEET_ID).execute()
-                # Pegando o ID da aba "facturas"
+                # Pegando o ID da aba "presupuestos"
                 sheets_ = spreadsheet.get('sheets', [])
                 for sheet_ in sheets_:
                     # Exibir o nome da aba e seu ID
@@ -737,7 +738,7 @@ if tab == TAB_2:  # Change Invoice
                                 'sheetId': SHEET_ID,  # O ID da aba, geralmente 0 para a primeira aba
                                 'dimension': 'ROWS',
                                 'startIndex': index_spreadsheet_sequence[0] - 1,  # Começa na primeira linha da factura
-                                'endIndex': total_linhas  # vai até o fim do arquivo pois a factura pode ter +/- linhas
+                                'endIndex': total_linhas  # vai até o fim do arquivo, pois a factura pode ter +/- linhas
                             }
                         }
                     }
@@ -796,7 +797,7 @@ if tab == TAB_3:  # Create NEW Invoice
     if client is not None:
         with st.container(border=True):
             # st.text(f'Cliente seleccionado: {client}')
-            for index_cliente in range(len(df_clientes_activos)):
+            for index_cliente in range(len(df_clientes)):
                 if df_clientes_activos.iloc[index_cliente]['nombre_cliente'] == client:
                     # index_cliente += 1
                     # print(f'index no df_clientes_activos = {str(index_cliente)}')
@@ -839,34 +840,45 @@ if tab == TAB_3:  # Create NEW Invoice
                 num_rows = col.number_input('Nro. de lineas en la factura:', value=1, min_value=1, max_value=12, step=1)
 
                 # columns to lay out the inputs
-                grid = st.columns([0.35, 0.06, 0.10, 0.10, 0.10, 0.10, 0.10])
+                grid = st.columns([0.42, 0.08, 0.10, 0.10, 0.10, 0.10, 0.10])
                 total_invoice = 0.0
                 base_imponible_sum = 0.0
                 cuota_tributaria_sum = 0.0
                 valor_retencion_sum = 0.0
                 for row in range(num_rows):
                     with grid[0]:
-                        line = st.text_input('Descripción *', value='', placeholder='', key=f'description{row}')
+                        description_key = f'description{row}'
+                        line = st.text_input('Descripción *', value='', placeholder='', key=description_key)
                     with grid[1]:
-                        line_qty = st.number_input('Cant.', min_value=0.01, value=1.0, key=f'qty{row}')
+                        qty_key = f'qty{row}'
+                        line_qty = st.number_input('Cant.', min_value=0.01, value=1.0, key=qty_key)
                     with grid[2]:
-                        line_value = st.number_input('Val.unit.', format="%0.2f", key=f'value{row}')
+                        value_key = f'value{row}'
+                        line_value = st.number_input('Val.unit.', format="%0.2f", key=value_key)
                     with grid[3]:
                         base_imponible = line_qty * line_value
-                        line_base = st.number_input('Base imp.', value=base_imponible, format="%0.2f", disabled=True,
-                                                    key=f'base{row}')
+                        base_key = f'base{row}'
+                        st.session_state[base_key] = base_imponible
+                        line_base = st.number_input('Base imp.', format="%0.2f", disabled=True,
+                                                    key=base_key)
                     with grid[4]:
                         cuota_tributaria = base_imponible * form_invoice_iva / 100
-                        line_cuotatrib = st.number_input('Cuota trib.', value=cuota_tributaria, format="%0.2f",
-                                                         disabled=True, key=f'cuota{row}')
+                        cuota_key = f'cuota{row}'
+                        st.session_state[cuota_key] = cuota_tributaria
+                        line_cuotatrib = st.number_input('Cuota trib.', format="%0.2f",
+                                                         disabled=True, key=cuota_key)
                     with grid[5]:
                         valor_retencion = base_imponible * form_invoice_desconto / 100
-                        line_retencion = st.number_input('Val.ret.', value=valor_retencion, format="%0.2f",
-                                                         disabled=True, key=f'retencion{row}')
+                        retencion_key = f'retencion{row}'
+                        st.session_state[retencion_key] = valor_retencion
+                        line_retencion = st.number_input('Val.ret.', format="%0.2f",
+                                                         disabled=True, key=retencion_key)
                     with grid[6]:
                         total = base_imponible + cuota_tributaria - valor_retencion
-                        line_total = st.number_input('Total', value=total, format="%0.2f", disabled=True,
-                                                     key=f'total{row}')
+                        total_key = f'total{row}'
+                        st.session_state[total_key] = total
+                        line_total = st.number_input('Total', format="%0.2f", disabled=True,
+                                                     key=total_key)
                         total_invoice += total
                         base_imponible_sum += base_imponible
                         cuota_tributaria_sum += cuota_tributaria
@@ -904,7 +916,7 @@ if tab == TAB_3:  # Create NEW Invoice
 
             if total_invoice != 0:
                 # print('Criando os registros para gravar a factura\n')
-                # print('st.session_state;\n', st.session_state)
+                # print('st.session_state\n', st.session_state)
                 if banco == 'CaixaBank':
                     form_banco = 'CaixaBank - IBAN: ES62-2100-8444-2602-0003-1531'
                 else:  # banco = Santander
@@ -977,7 +989,7 @@ if tab == TAB_3:  # Create NEW Invoice
                     'form_banco': form_banco
                 }
 
-                # Dinamically add the items (lines) of the invoice service descriptions in the dictionary
+                # Dynamically add the items (lines) of the invoice service descriptions in the dictionary
                 # Maximum number of lines = 12 (set in the template file)
                 for idx in range(num_rows):
                     description = st.session_state[f'description{idx}']
@@ -1023,7 +1035,7 @@ if tab == TAB_3:  # Create NEW Invoice
                     pdf_request = service_drive.files().export_media(fileId=new_document_id, mimeType='application/pdf')
                     pdf_metadata = {
                         'name': new_document,
-                        'parents': [PDF_FOLDER_ID]  # Coloca o arquivo dentro da pasta específica
+                        'parents': [INVOICE_PDF_FOLDER_ID]  # Coloca o arquivo dentro da pasta específica
                     }
                     media = googleapiclient.http.MediaIoBaseUpload(io.BytesIO(pdf_request.execute()),
                                                                    mimetype='application/pdf')
@@ -1037,6 +1049,8 @@ if tab == TAB_3:  # Create NEW Invoice
                                                         range="facturas", valueInputOption="USER_ENTERED",
                                                         body={"values": [registro[i]]}).execute()
                     st.success(f'Factura {invoice_nr} creada con éxito.', icon='✅')
+                    time.sleep(3)  # wait 3 seconds to display the success to the user
+
                     # Delete all session state keys
                     for key in st.session_state.keys():
                         del st.session_state[key]
