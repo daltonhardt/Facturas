@@ -1,6 +1,6 @@
 pandas==2.3.3
 requests~=2.32.3
-streamlit==1.37.0
+streamlit==1.36.0
 streamlit-option-menu==0.3.13
 langchain-core==1.1.0
 google-api-python-client==2.142.0
