@@ -4,7 +4,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import pandas as pd
 import locale
-from datetime import datetime
+from datetime import datetime, date
 import json
 
 
