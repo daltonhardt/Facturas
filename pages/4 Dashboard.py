@@ -167,6 +167,6 @@ with col5:
     total_facturas_canceladas_sum_formatado = "€ {:,.2f}".format(total_facturas_canceladas_sum).replace(",", "X").replace(".", ",").replace("X", ".")
     st.metric(label='Total Cancelado', value=total_facturas_canceladas_sum_formatado)
 
-st.bar_chart(df_total_facturas, x='month', y='total', x_label='Mes', y_label='Total', color=(0, 100, 255, 98))
+st.bar_chart(df_total_facturas, x='month', y='total', x_label='Mes', y_label='Total', color='month')
 columns_to_show = ['nro_factura', 'fecha_emision', 'total', 'nombre_cliente', 'descripcion', 'status']
 st.dataframe(df_total_facturas, column_order=columns_to_show)
