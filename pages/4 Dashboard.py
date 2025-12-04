@@ -66,30 +66,25 @@ sheet = service.spreadsheets()
 # --- Starting Streamlit
 st.set_page_config(
     layout="wide",
-    initial_sidebar_state="collapsed",
     menu_items={
         'About': "# Facturas *EL SHADDAI*"
     }
 )
-version_number = '2410.01'
+version_number = '2512.01'
 st.sidebar.text(f'[ver. {version_number}]')
 
-selected = option_menu(
-    menu_title='Dashboard',
-    options=['Overview'],
-    icons=['bar-chart-fill'],
-    menu_icon='cast',
-    orientation='horizontal',
-    default_index=0
-)
+# get today date
+today = date.today()
+YEAR = today.strftime("%Y")
+year = today.strftime("%y")
+
+selected = option_menu(menu_title=f'Dashboard {YEAR}', options=['Overview'], icons=['bar-chart-fill'], menu_icon='cast',
+                       orientation='horizontal')
 
 # st.sidebar.markdown("# Dashboard 📈")
 
 # set the locale to Spanish (Spain)
 locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
-
-# get today date
-TODAY = datetime.strptime(datetime.now().strftime("%d/%m/%Y"), "%d/%m/%Y")
 
 # pd.options.display.float_format = "{:,.2f}".format
 pd.set_option('display.precision', 2)
@@ -104,6 +99,12 @@ df_clientes = leitura_worksheet('clientes')
 
 # Create DataFrame with ALL Invoices values from spreadsheet
 df_facturas = leitura_worksheet('facturas')
+
+# Cria no dataframe as colunas de Mês e Ano da 'fecha_emision'
+df_facturas['year'] = pd.to_datetime(df_facturas['fecha_emision'], dayfirst=True).dt.year - 2000
+df_facturas['month'] = pd.to_datetime(df_facturas['fecha_emision'], dayfirst=True).dt.month
+# Extract data for current year
+df_facturas = df_facturas[df_facturas['year'] == int(year)].reset_index()
 
 # Adjusting the float numbers
 df_facturas['cantidad'] = df_facturas['cantidad'].apply(
@@ -126,17 +127,9 @@ df_facturas['nombre_cliente'] = df_facturas.cod_cliente.map(
 # Group by 'nro_factura' and SUM each invoice
 df_total_facturas = df_facturas.groupby(['nro_factura'], as_index=False).agg(
     {'total': 'sum', 'nombre_cliente': 'first', 'descripcion': 'first', 'fecha_emision': 'first', 'plazo_pago': 'first',
-     'status': 'first'})
+     'status': 'first', 'month': 'first', 'year': 'first'})
 df_total_facturas.index += 1
 # df_total_facturas['total'] = df_total_facturas['total'].apply(lambda x: f'{x:.2f}')
-
-# converte a coluna 'fecha_emision' em tipo DATE
-df_total_facturas['fecha_emision'] = pd.to_datetime(df_total_facturas['fecha_emision'], dayfirst=True)
-# Cria no dataframe as colunas de Mês e Ano da 'fecha_emision'
-df_total_facturas['year'] = df_total_facturas['fecha_emision'].dt.year
-df_total_facturas['month'] = df_total_facturas['fecha_emision'].dt.month
-
-# df_bymonth = df_total_facturas.groupby([df_total_facturas.fecha_emision.dt.to_period('M'), 'total']).sum().reset_index()
 
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
@@ -174,5 +167,6 @@ with col5:
     total_facturas_canceladas_sum_formatado = "€ {:,.2f}".format(total_facturas_canceladas_sum).replace(",", "X").replace(".", ",").replace("X", ".")
     st.metric(label='Total Cancelado', value=total_facturas_canceladas_sum_formatado)
 
-st.bar_chart(df_total_facturas, x='month', y='total', x_label='Mes', y_label='Total')
-st.dataframe(df_total_facturas)
+st.bar_chart(df_total_facturas, x='month', y='total', x_label='Mes', y_label='Total', color=(0, 100, 255, 98), stack=True)
+columns_to_show = ['nro_factura', 'fecha_emision', 'total', 'nombre_cliente', 'descripcion', 'status']
+st.dataframe(df_total_facturas, column_order=columns_to_show)
