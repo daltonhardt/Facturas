@@ -478,6 +478,7 @@ if tab == TAB_1:
                     'client': client,
                     'client_cif': client_cif,
                     'client_address': client_address,
+                    'client_postal': client_postal,
                     'client_city': client_city,
                     'client_prov': client_prov,
                     'client_contact': client_contact,
