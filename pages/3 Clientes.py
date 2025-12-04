@@ -112,7 +112,7 @@ sheet = service.spreadsheets()
 
 # --- Starting Streamlit
 st.set_page_config(layout="wide")
-version_number = '2410.01'
+version_number = '2512.01'
 st.sidebar.text(f'[ver. {version_number}]')
 
 st.header(" 🔤 Registro de clientes")
@@ -153,35 +153,33 @@ if tab == TAB_0:  # Show ONLY ACTIVE clients
         for index, row in df_clientes_activos.iterrows():
             # print(index, '--', index % num_columns)
             with columns[index % num_columns]:
-                with st.expander(row['nombre_cliente'], expanded=EXPANDED):
-                    col1, col2 = st.columns([0.3, 0.7])
-                    with col1:
-                        st.markdown(f"**Codigo:**  \n"
-                                    f"**CIF/NIF:**  \n"
-                                    f"**Contacto:**  \n"
-                                    f"**Teléfono:**  \n"
-                                    f"**Prov/Ciudad:**  \n"
-                                    f"**Dirección:**  \n"
-                                    f"**Cod. Postal:**  \n"
-                                    f"**Email:**  \n"
-                                    f"**Obs.:**  "
-                                    )
-                    with col2:
-                        st.markdown(f"{row['cod_cliente']}  \n"
-                                    f"{row['cif']}  \n"
-                                    f"{row['contacto']}  \n"
-                                    f"{row['telefono']}  \n"
-                                    f"{row['provincia']}, {row['ciudad']}  \n"
-                                    f"{row['direccion']}  \n"
-                                    f"{row['postal']}  \n"
-                                    f"{row['email']}  \n"
-                                    f"{row['obs']}"
-                                    )
+                with st.expander(f"**{row['nombre_cliente']}**", expanded=EXPANDED):
+                    st.markdown(f"""
+                    <div style="
+                        border:1px solid #ddd;
+                        border-radius:10px;
+                        padding:5px;
+                        min-height:260px;
+                        margin-bottom:15px;
+                        ">
+                        <b>Código   :</b> {row['cod_cliente']}<br>
+                        <b>C.I.F.   :</b> {row['cif']}<br>
+                        <b>Contacto :</b> {row['contacto'] or '-'}<br>
+                        <b>Teléfono :</b> {row['telefono'] or '-'}<br>
+                        <b>Provincia:</b> {row['provincia'] or '-'}<br>
+                        <b>Ciudad   :</b> {row['ciudad'] or '-'}<br>
+                        <b>Dirección:</b> {row['direccion'] or '-'}<br>
+                        <b>Postal   :</b> {row['postal'] or '-'}<br>
+                        <b>e-mail   :</b> {row['email'] or '-'}<br>
+                        <b>obs.     :</b> {row['obs'] or '-'}<br>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
                     if "borrar" not in st.session_state:
                         m = st.markdown("""
                                         <style>
                                         div.stButton > button:first-child {
-                                            background-color: rgb(204, 49, 49);
+                                            background-color: rgb(255, 0, 0);
                                         }
                                         </style>""", unsafe_allow_html=True)
                         if st.button("Borrar", key='delete_' + str(index)):
@@ -202,35 +200,34 @@ if tab == TAB_1:  # Show ONLY INACTIVE clients
         for index, row in df_clientes_inactivos.iterrows():
             # print(index, '--', index % num_columns)
             with columns[index % num_columns]:
-                with st.expander(row['nombre_cliente'], expanded=EXPANDED):
-                    col1, col2 = st.columns([0.4, 0.6])
-                    with col1:
-                        st.markdown(f"**Codigo**  \n"
-                                    f"**CIF/NIF**  \n"
-                                    f"**Contacto**  \n"
-                                    f"**Teléfono**  \n"
-                                    f"**Prov/Ciudad**  \n"
-                                    f"**Dirección**  \n"
-                                    f"**Cod. Postal**  \n"
-                                    f"**Email**  \n"
-                                    f"**Obs.**  "
-                                    )
-                    with col2:
-                        st.markdown(f"{row['cod_cliente']}  \n"
-                                    f"{row['cif']}  \n"
-                                    f"{row['contacto']}  \n"
-                                    f"{row['telefono']}  \n"
-                                    f"{row['provincia']}, {row['ciudad']}  \n"
-                                    f"{row['direccion']}  \n"
-                                    f"{row['postal']}  \n"
-                                    f"{row['email']}  \n"
-                                    f"{row['obs']}"
-                                    )
+                with st.expander(f"**{row['nombre_cliente']}**", expanded=EXPANDED):
+                    # with st.container():
+                    st.markdown(f"""
+                    <div style="
+                        border:1px solid #ddd;
+                        border-radius:10px;
+                        padding:5px;
+                        min-height:260px;
+                        margin-bottom:15px;
+                        ">
+                        <b>Código   :</b> {row['cod_cliente']}<br>
+                        <b>C.I.F.   :</b> {row['cif']}<br>
+                        <b>Contacto :</b> {row['contacto'] or '-'}<br>
+                        <b>Teléfono :</b> {row['telefono'] or '-'}<br>
+                        <b>Provincia:</b> {row['provincia'] or '-'}<br>
+                        <b>Ciudad   :</b> {row['ciudad'] or '-'}<br>
+                        <b>Dirección:</b> {row['direccion'] or '-'}<br>
+                        <b>Postal   :</b> {row['postal'] or '-'}<br>
+                        <b>e-mail   :</b> {row['email'] or '-'}<br>
+                        <b>obs.     :</b> {row['obs'] or '-'}<br>
+                        </div>
+                        """, unsafe_allow_html=True)
+
                     if "Reactivar" not in st.session_state:
                         m = st.markdown("""
                                         <style>
                                         div.stButton > button:first-child {
-                                            background-color: rgb(0, 180, 0);
+                                            background-color: rgb(0, 255, 0);
                                         }
                                         </style>""", unsafe_allow_html=True)
                         if st.button("Reactivar", key='reactivate_' + str(index)):
