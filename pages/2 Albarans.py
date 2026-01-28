@@ -205,7 +205,7 @@ service_drive = build("drive", "v3", credentials=creds)
 # ---- STREAMLIT INÍCIO DA INTERFACE E DO FLUXO  ----
 st.set_page_config(layout="wide")
 state= st.session_state
-version_number = '2512.01'
+version_number = '2601.01'
 st.sidebar.text(f'[ver. {version_number}]')
 st.header("🧾 Albarans")
 
