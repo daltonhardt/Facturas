@@ -299,7 +299,6 @@ if tab == TAB_1:
                               index=None, placeholder='Seleccione...', key='client_key')
 
     if client is not None:
-        
         # ** IMPORTANTE **
         # os nomes das colunas importadas do DF_TO_SAVE: 'Descripción',        'Cantidad',   'Valor'
         # devem combinar com as colunas do FORM NOVO   : 'albaran_description', 'albaran_qty', 'albaran_value'
@@ -345,7 +344,9 @@ if tab == TAB_1:
 
             albaran_date = datetime.now()  # current date
 
-            col1, col2, col3 = st.columns(3)
+            col0, col1, col2, col3 = st.columns(4)
+            with col0:
+                form_albaran_pedido = st.text_input('Nro. pedido:', placeholder='Introduzca...')
             with col1:
                 form_albaran_date = st.date_input('Fecha emissión:', value=albaran_date, format="DD/MM/YYYY")
             with col2:
@@ -439,9 +440,11 @@ if tab == TAB_1:
                     retencion = state[f'albaran_retencion{i}']
                     total = state[f'albaran_total{i}']
                     albaran_date = form_albaran_date.strftime("%-d/%m/%Y")
+                    albaran_pedido = form_albaran_pedido
                     row = [
                         albaran_nr,                     # numero del presupuesto
                         client_cod,                     # codigo del cliente
+                        albaran_pedido,                 # numero del pedido
                         albaran_date,                   # fecha de emisión
                         description,                    # descripción
                         qty,                            # cantidad
@@ -484,6 +487,7 @@ if tab == TAB_1:
                     'client_contact': client_contact,
                     'client_email': client_email,
                     'client_phone': str(client_phone),
+                    'alba_pedido': str(form_albaran_pedido),
                     'form_alba_iva': str(form_albaran_iva),
                     'form_alba_desconto': str(form_albaran_desconto),
                     'form_alba_note': form_albaran_note,
